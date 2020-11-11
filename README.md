@@ -1,8 +1,8 @@
 # hubspot-proposals
-The sample code here modifies the HubSpot Quotes (Simple) and adds an additional column for Product Images.
+The sample code here modifies the HubSpot `Quotes (Simple)` template and adds an additional column for Product Images.
 
 Requirements:
-Create a custom property `images` in  `Products`.
+Create a custom property `image` in  `Products`.
 Store the image URL in images. For example "https://f.hubspotusercontent20.net/hubfs/7248622/SE_Logo_RGB-01.png"
 
 Clone the HubSpot default proposals theme:
@@ -12,4 +12,6 @@ Clone the HubSpot default proposals theme:
 4) Navigate to your cloned version of the theme > quote__simple.html
 5) Replace the quote_simple.html with the code linked.
 
-You can rename the quote template name on line 4 after `label`. Default = label: Quote (simple)
+Additional Notes:
+> You can rename the quote template name on line 4 after `label`. The default label is `Quote (simple)`
+> To pull a product image into Preview, modify mock_data.html and add your new custom property (image) in the lineItems JSON array. I added `"image": "https://f.hubspotusercontent20.net/hubfs/7248622/SE_Logo_RGB-01.png",` after line 66.
