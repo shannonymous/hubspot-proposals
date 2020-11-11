@@ -1,0 +1,271 @@
+<!--
+  templateType: proposal
+  isAvailableForNewContent: true
+  label: Quote (with Images)
+-->
+<!doctype html>
+  {% from '../imports/mock_data.html' import SAMPLE_TEMPLATE_DATA as backup_template_data %}
+
+  {% set template_data = template_data || backup_template_data %}
+  {% set QUOTE_PROPS = template_data.quote %}
+  {% set QUOTE_TOTAL = template_data.totals.total %}
+  {% set SUB_TOTALS = template_data.totals.subTotals %}
+  {% set CURRENCY = QUOTE_PROPS.hs_currency || 'USD' %}
+  {% set LOCALE = QUOTE_PROPS.hs_locale || 'en-US' %}
+  {% set TIMEZONE = QUOTE_PROPS.hs_timezone || 'US/Eastern' %}
+  {% set RECIPIENT_CONTACTS = template_data.quoteAssociatedObjects.contacts %}
+  {% set RECIPIENT_COMPANY = template_data.quoteAssociatedObjects.company %}
+  {% set CONTACT_SIGNERS = template_data.quoteAssociatedObjects.contactSigners %}
+  {% set LINE_ITEMS = template_data.quoteAssociatedObjects.lineItems %}
+  {% set ADDITIONAL_FEES = template_data.quoteAssociatedObjects.additionalFees %}
+
+  <html lang="{{ html_lang }}" {{ html_lang_dir }}>
+    <head>
+      <title>{{ page_meta.html_title }}</title>
+      {% if site_settings.favicon_src %}
+        <link rel="shortcut icon" href="{{ site_settings.favicon_src }}" />
+      {% endif %}
+
+      <meta name="description" content="{{ page_meta.meta_description }}">
+      {{ require_css(get_asset_url("../css/shared.css")) }}
+      {{ require_css(get_asset_url("../css/quote__simple.css")) }}
+      {{ require_css(get_asset_url("../css/theme-overrides.css")) }}
+      {{ standard_header_includes }}
+    </head>
+
+    <body class="hs-proposals hs-proposals--simple">
+      <h1 class="title">{{ QUOTE_PROPS.hs_title }}</h1>
+      <div class="letterhead">
+        <div>
+          {% if RECIPIENT_COMPANY %}
+            <span><b>{{ RECIPIENT_COMPANY.name }}</b></span><br>
+            {%- if RECIPIENT_COMPANY.address -%}{{ RECIPIENT_COMPANY.address }}<br>{%- endif -%}
+            {{ RECIPIENT_COMPANY.city ~ ' ' ~ RECIPIENT_COMPANY.state ~ ' ' ~ RECIPIENT_COMPANY.zip }}<br>
+            {%- if RECIPIENT_COMPANY.country -%}{{ RECIPIENT_COMPANY.country }}<br>{%- endif -%}
+            <br>
+          {% endif %}
+          {% for recipient in RECIPIENT_CONTACTS %}
+            <b>{{ recipient.firstname ~ ' ' ~ recipient.lastname }}</b><br>
+            {{ recipient.email }}<br>
+            {%- if recipient.phone -%}{{ recipient.phone }}<br>{%- endif -%}
+            <br>
+          {% endfor %}
+          Reference: {{ QUOTE_PROPS.hs_quote_number }}<br>
+          Prepared: {{ QUOTE_PROPS.hs_createdate|int|datetimeformat('%B %e, %Y', TIMEZONE, LOCALE) }}<br>
+          Expires: {{ QUOTE_PROPS.hs_expiration_date|int|datetimeformat('%B %e, %Y', TIMEZONE, LOCALE) }}<br>
+        </div>
+        <div>
+          <img width="50" height="50" style="border-radius: 50%; object-fit:contain;" loading="lazy" src="{{ QUOTE_PROPS.hs_sender_company_image_url }}" alt="{{ QUOTE_PROPS.hs_sender_company_name }} logo"><br />
+          {%- if QUOTE_PROPS.hs_sender_company_name -%}<b>{{ QUOTE_PROPS.hs_sender_company_name }}</b><br>{%- endif -%}
+          {%- if QUOTE_PROPS.hs_sender_company_address -%}{{ QUOTE_PROPS.hs_sender_company_address }}<br>{%- endif -%}
+          {%- if QUOTE_PROPS.hs_sender_company_address2 -%}{{ QUOTE_PROPS.hs_sender_company_address2 }}<br>{%- endif -%}
+          {{ QUOTE_PROPS.hs_sender_company_city ~ ' ' ~ QUOTE_PROPS.hs_sender_company_state ~ ' ' ~ QUOTE_PROPS.hs_sender_company_zip }}<br>
+          {%- if QUOTE_PROPS.hs_sender_company_country -%}{{ QUOTE_PROPS.hs_sender_company_country }}<br>{%- endif -%}
+          <br>
+          <span><b>
+            {% if QUOTE_PROPS.hs_sender_firstname || QUOTE_PROPS.hs_sender_lastname %}
+              {{ 'Prepared by: ' ~ QUOTE_PROPS.hs_sender_firstname ~ ' ' ~ QUOTE_PROPS.hs_sender_lastname }}
+              <br>
+            {% endif %}
+          </b></span>
+          {{ QUOTE_PROPS.hs_sender_email }}
+        </div>
+      </div>
+
+      <section aria-label="quote" class="quote">
+        <div class="quote__total">
+          <span>Total</span>
+          <span>{{ QUOTE_TOTAL|format_currency(LOCALE, CURRENCY, true) }}</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">PRODUCTS & SERVICES</th>
+              <th scope="col">SKU</th>
+              <th scope="col">QUANTITY</th>
+              <th scope="col">BILLING FREQUENCY</th>
+              <th scope="col">IMAGE</th>
+              <th scope="col">PRICE</th>
+            </tr>
+          </thead>
+          <tbody class="line-items">
+            {% for item in LINE_ITEMS|sort(False, False, 'hs_position_on_quote') %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>{{ item.hs_sku }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ item.recurringbillingfrequency }}</td>
+              <td><img style="max-width: 200px; height: auto;" src="{{ item.image }}"></td>
+              <td>{{item.amount|format_currency(LOCALE, CURRENCY, true) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          {% if SUB_TOTALS|length > 0 %}
+            <thead>
+              <tr>
+                <th scope="col">SUBTOTALS</th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col">PRICE</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if SUB_TOTALS.one_time %}
+                <tr>
+                  <td>One-time subtotal</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td>{{ SUB_TOTALS.one_time.subTotal|format_currency(LOCALE, CURRENCY, true) }}</td>
+                </tr>
+              {% endif %}
+
+              {% if SUB_TOTALS.monthly %}
+                <tr>
+                  <td>Monthly subtotal</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td>{{ SUB_TOTALS.monthly.subTotal|format_currency(LOCALE, CURRENCY, true) }}</td>
+                </tr>
+              {% endif %}
+
+              {% if SUB_TOTALS.quarterly %}
+                <tr>
+                  <td>Quarterly subtotal</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td>{{ SUB_TOTALS.quarterly.subTotal|format_currency(LOCALE, CURRENCY, true) }}</td>
+                </tr>
+              {% endif %}
+
+              {% if SUB_TOTALS.per_six_months %}
+                <tr>
+                  <td>Per six months subtotal</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td>{{ SUB_TOTALS.per_six_months.subTotal|format_currency(LOCALE, CURRENCY, true) }}</td>
+                </tr>
+              {% endif %}
+
+              {% if SUB_TOTALS.annually %}
+                <tr>
+                  <td>Annual subtotal</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td>{{ SUB_TOTALS.annually.subTotal|format_currency(LOCALE, CURRENCY, true) }}</td>
+                </tr>
+              {% endif %}
+
+              {% if SUB_TOTALS.per_two_years %}
+                <tr>
+                  <td>Per two years subtotal</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td>{{ SUB_TOTALS.per_two_years.subTotal|format_currency(LOCALE, CURRENCY, true) }}</td>
+                </tr>
+              {% endif %}
+
+              {% if SUB_TOTALS.per_three_years %}
+                <tr>
+                  <td>Per three years subtotal</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td>{{ SUB_TOTALS.per_three_years.subTotal|format_currency(LOCALE, CURRENCY, true) }}</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          {% endif %}
+          {%- if ADDITIONAL_FEES|length > 0 -%}
+            <thead>
+              <tr>
+                <th scope="col">OTHER FEES</th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+                <th scope="col">PRICE</th>
+              </tr>
+            </thead>
+            <tbody>
+              {%- for fee in ADDITIONAL_FEES -%}
+                <tr>
+                  <td>{{ fee.name }}</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td>
+                    {{ fee.category == "DISCOUNT" ? "-" : null }}
+                    {% if fee.isPercentage %}
+                      {{ fee.amount }} %
+                    {% else %}
+                      {{ fee.amount|format_currency(LOCALE, CURRENCY, true)}}
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          {%- endif -%}
+        </table>
+
+        <table class="table__total">
+          <tbody>
+            <tr>
+              <td scope="row">Totals</td>
+              <td>{{ QUOTE_TOTAL|format_currency(LOCALE, CURRENCY, true) }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {% if QUOTE_PROPS.hs_payment_enabled == 'true' %}
+          <div style="text-align: right; margin-top: 30px">
+            {% module "payment" path="../modules/payment"
+              url_key="{{ QUOTE_PROPS.hs_public_url_key }}",
+              api_base_url="{{ template_data.hubspotBaseUrl }}"
+            %}
+          </div>
+        {% endif %}
+      </section>
+
+      <div class="annotation-section">
+        {% if QUOTE_PROPS.hs_comments|length > 0 %}
+          <div class="annotation">
+            <h4>Comments</h4>
+            <div class="rich-text-body">
+              {{ QUOTE_PROPS.hs_comments }}
+            </div>
+          </div>
+        {% endif %}
+        {% if QUOTE_PROPS.hs_terms|length > 0 %}
+          <div class="annotation">
+            <h4>Purchase terms</h4>
+            <div class="rich-text-body">
+              {{ QUOTE_PROPS.hs_terms }}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      {% module "esign" path="../modules/esign",
+        url_key="{{ QUOTE_PROPS.hs_public_url_key }}",
+        api_base_url="{{ template_data.hubspotBaseUrl }}",
+        show_signature_box="{{ QUOTE_PROPS.hs_show_signature_box }}",
+        show_esign="{{ QUOTE_PROPS.hs_esign_enabled }}",
+        contact_signers_preview="{{ template_data.quoteAssociatedObjects.contactSigners }}",
+        user_signers_preview="{{ template_data.quoteAssociatedObjects.userSigners }}"
+      %}
+      {{ standard_footer_includes }}
+    </body>
